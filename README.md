@@ -22,6 +22,19 @@ Real closet apps mostly rely on tag-filtering + vision-based auto-tagging. RAG i
 
 Filtering first, embeddings second: hard constraints get enforced cheaply before semantic search runs over a much smaller, already-safe candidate set (~15–20 items instead of 200) — mirroring how production RAG systems are typically built.
 
+## Project structure
+
+```
+loom-rag/
+├── README.md
+├── .gitignore
+├── requirements.txt
+├── data/
+│   └── wardrobe.json
+└── src/
+    └── retrieve.py
+```
+
 ## Tools
 
 - **Embeddings:** sentence-transformers (`all-MiniLM-L6-v2`)

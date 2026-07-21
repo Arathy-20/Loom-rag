@@ -1,0 +1,142 @@
+[
+  {
+    "id": "w001",
+    "description": "cheery red top, sleeveless, casual, good for day outing",
+    "category": "top",
+    "season": ["all-season"],
+    "weather": ["hot", "humid"]
+  },
+  {
+    "id": "w002",
+    "description": "white crop hoodie, good for cold weather and night outings, casual and cozy",
+    "category": "Outerwear",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "w003",
+    "description": "chunky black and white sneakers, casual and comfortable",
+    "category": "Footwear",
+    "season": ["winter", "summer"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "w004",
+    "description": "medium sized brown and golden belt, goes well with blue jeans",
+    "category": "Accessory",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "w005",
+    "description": "white skorts, little on the elegant side, not too casual, good for a cafe date",
+    "category": "bottom",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w006",
+    "description": "white and red striped crop top, sleeveless, casual everyday wear",
+    "category": "top",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w007",
+    "description": "high waisted blue jeans, goes with everyday casual tops, little wide leg",
+    "category": "bottom",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "w008",
+    "description": "black short sleeved short dress with small golden belt, good for concerts or dinner dates",
+    "category": "dress",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w009",
+    "description": "brown sleeveless dress around ankle length with embroidery work, mix of ethnic fashion",
+    "category": "dress",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w010",
+    "description": "violet sleeveless dress with floral prints, a diamond shaped cut around the chest",
+    "category": "dress",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w011",
+    "description": "white sleeveless crop top with a white bow on the back, suitable for a beach date",
+    "category": "top",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w012",
+    "description": "multicolor pastel shade comfortable sneakers",
+    "category": "Footware",
+    "season": ["summer", "winter"],
+    "weather": ["hot", "cold"]
+  },
+  {
+    "id": "w013",
+    "description": "small butterfly shaped silver earrings",
+    "category": "category",
+    "season": ["all-seasona"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "w014",
+    "description": "brown full-sleeved crop top with golden embroidery, buttons around the chest",
+    "category": "top",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "w015",
+    "description": "black light weight netted crop top, casual everyday wear",
+    "category": "top",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "w016",
+    "description": "cute light blue denim crop top, puff sleeved",
+    "category": "top",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w017",
+    "description": "blue and white oversized shirt",
+    "category": "top",
+    "season": ["winter"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "w018",
+    "description": "green baggy cargo pants",
+    "category": "bottom",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "w019",
+    "description": "plain white cigarette pants",
+    "category": "bottom",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "w020",
+    "description": "plain white crop top with strap sleeves",
+    "category": "tops",
+    "season": ["summer"],
+    "weather": ["hot"]
+  }
+]
