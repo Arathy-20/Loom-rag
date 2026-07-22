@@ -5,13 +5,16 @@ No filtering, no vector database — just numpy, so every step stays visible.
 """
 
 import json
+import os
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
 # ---------------------------------------------------------
 # 1. Load the wardrobe corpus
 # ---------------------------------------------------------
-with open("wardrobe.json", "r") as f:
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "wardrobe.json")
+
+with open(DATA_PATH, "r") as f:
     wardrobe = json.load(f)
 
 print(f"Loaded {len(wardrobe)} wardrobe items.\n")
