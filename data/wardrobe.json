@@ -9,21 +9,21 @@
   {
     "id": "w002",
     "description": "white crop hoodie, good for cold weather and night outings, casual and cozy",
-    "category": "Outerwear",
+    "category": "outerwear",
     "season": ["winter", "monsoon"],
     "weather": ["cold"]
   },
   {
     "id": "w003",
     "description": "chunky black and white sneakers, casual and comfortable",
-    "category": "Footwear",
+    "category": "footwear",
     "season": ["winter", "summer"],
     "weather": ["cold"]
   },
   {
     "id": "w004",
     "description": "medium sized brown and golden belt, goes well with blue jeans",
-    "category": "Accessory",
+    "category": "accessory",
     "season": ["all-season"],
     "weather": ["all-weather"]
   },
@@ -79,15 +79,15 @@
   {
     "id": "w012",
     "description": "multicolor pastel shade comfortable sneakers",
-    "category": "Footware",
+    "category": "footwear",
     "season": ["summer", "winter"],
     "weather": ["hot", "cold"]
   },
   {
     "id": "w013",
     "description": "small butterfly shaped silver earrings",
-    "category": "category",
-    "season": ["all-seasona"],
+    "category": "accessory",
+    "season": ["all-season"],
     "weather": ["all-weather"]
   },
   {
@@ -135,7 +135,7 @@
   {
     "id": "w020",
     "description": "plain white crop top with strap sleeves",
-    "category": "tops",
+    "category": "top",
     "season": ["summer"],
     "weather": ["hot"]
   }
