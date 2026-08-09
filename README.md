@@ -30,9 +30,13 @@ loom-rag/
 ├── .gitignore
 ├── requirements.txt
 ├── data/
-│   └── wardrobe.json
+│   ├── wardrobe.json
+│   └── shop_catalog.json
 └── src/
-    └── retrieve.py
+    ├── retrieve.py           # Week 1 — plain numpy cosine similarity (reference implementation)
+    ├── filter.py              # Week 2 — standalone rule-based filter logic
+    ├── retrieve_chroma.py     # Week 2 — filter + embed, combined via Chroma
+    └── retrieve_gap_fill.py   # Week 3 — wardrobe search + gap detection + shop search
 ```
 
 ## Tools
@@ -41,6 +45,11 @@ loom-rag/
 - **Vector store:** Chroma (metadata support alongside vectors)
 - **Generation:** Gemini
 - **Similarity metric:** cosine similarity
+
+## Known limitations (to revisit in Week 5)
+
+- **Multi-value metadata filtering is unreliable.** Weather and season are stored as comma-joined strings (e.g. `"hot,humid"`) so they can be saved as Chroma metadata. Chroma's `where` clause does exact string matching, not substring/contains matching, so filtering on a single value (e.g. `weather="hot"`) silently fails to match items with multiple values. The `weather` parameter was deliberately left out of `retrieve_chroma.py`'s `search()` signature rather than ship it broken. Proper fix: one-hot boolean metadata fields per value (`weather_hot`, `weather_cold`, etc.).
+- **Gap detection has no formality/appropriateness signal.** Gap detection (`retrieve_gap_fill.py`) only measures topical similarity via embedding score, not suitability. Example: a casual hoodie cleared the coverage threshold for a "formal winter dinner" query, because "cold weather" and "night" overlapped semantically even though "casual" and "formal" are in tension. No `formality` field currently exists in the schema. Whether this is worth fixing with a new field vs. handled at the generation stage is an open question, to be decided based on how often it shows up in Week 5's evaluation set.
 
 ## Build log
 
@@ -51,13 +60,19 @@ loom-rag/
 - Verified retrieval ranks by semantic meaning, not keyword overlap
 
 ### Week 2 — Vector store & structured filtering (Stage 2)
-*In progress*
+- Cleaned inconsistent category values in the wardrobe corpus
+- Built standalone rule-based filter (`filter.py`)
+- Migrated storage into Chroma, combining filter + embed in one query
+- Found and documented the multi-value metadata filtering limitation
 
 ### Week 3 — Second corpus & gap-filling (Stage 3)
-*Not started*
+- Hand-built an 18-item shop catalog, deliberately covering wardrobe gaps
+- Implemented category-coverage gap detection with a similarity threshold
+- Chained wardrobe search → gap detection → shop search
+- Found and documented the formality/appropriateness limitation
 
 ### Week 4 — Grounded generation (Stage 4)
-*Not started*
+*In progress*
 
 ### Week 5 — Evaluation
 *Not started*
