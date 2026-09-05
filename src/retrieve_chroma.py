@@ -80,17 +80,20 @@ print(f"Added {collection.count()} items to Chroma.\n")
 # ---------------------------------------------------------
 # 4. Search: filter first, then embed-rank within the filtered set
 # ---------------------------------------------------------
-def search(query, category=None, weather=None, top_k=5):
+def search(query, category=None, top_k=5):
     """
-    category / weather: exact-match filters, applied before embedding
-    search runs. Season is left out of Chroma filtering for now since
-    Chroma's `where` clause does exact match, not "is this value inside
-    a comma-separated field" — that needs a different approach we'll
-    revisit if it matters later.
-    """
+category: exact-match filter, applied before embedding search runs.
+
+Weather and season filtering are intentionally not implemented yet —
+Chroma's `where` clause does exact string matching, and weather/season
+are stored as comma-joined strings (e.g. "hot,humid"), so exact-match
+filtering doesn't work correctly for multi-value fields. Revisit with
+a one-hot metadata structure if this becomes a real limitation.
+"""
     where_clause = {}
     if category is not None:
         where_clause["category"] = category
+    
 
     results = collection.query(
         query_texts=[query],
