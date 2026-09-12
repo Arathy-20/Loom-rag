@@ -27,6 +27,8 @@ SHOP_PATH = os.path.join(DATA_DIR, "shop_catalog.json")
 # category. Below this, we treat the category as effectively missing
 # even if something technically got retrieved. Tune this by hand —
 # it's a judgment call worth being able to justify in an interview.
+# KNOWN LIMITATION: this only measures topical similarity, not
+# suitability (e.g. formality) — see README.
 MIN_COVERAGE_SCORE = 0.30
 
 
@@ -66,12 +68,14 @@ shop_collection.add(
     metadatas=[{"category": item["category"]} for item in shop_catalog],
 )
 
-print(f"Wardrobe: {wardrobe_collection.count()} items | Shop: {shop_collection.count()} items\n")
-
 
 # ---------------------------------------------------------
-# 2. Wardrobe search (same pattern as Week 2)
+# 2. Search functions
 # ---------------------------------------------------------
+# KNOWN LIMITATION: only category is filtered here. Season/weather
+# metadata exists on every item but is NOT applied — see README for
+# the confirmed failure case (a summer-tagged dress ranking #1 for a
+# winter query) and the root cause (multi-value metadata filtering).
 def search_wardrobe(query, category=None, top_k=5):
     where_clause = {"category": category} if category else None
     results = wardrobe_collection.query(
@@ -123,19 +127,40 @@ def detect_gaps(wardrobe_results, needed_categories):
 
 
 # ---------------------------------------------------------
-# 4. Full pipeline: wardrobe search -> detect gaps -> shop search
+# 4. Core pipeline — returns data (used by generate.py and the
+#    printing wrapper below)
+# ---------------------------------------------------------
+def style_outfit_data(query, needed_categories, top_k=5):
+    """
+    Runs the full wardrobe -> gap detection -> shop pipeline and
+    returns (owned_items, shop_items) as plain lists of dicts.
+    No printing — callers decide how to present the result.
+    """
+    wardrobe_results = search_wardrobe(query, top_k=top_k)
+    gaps = detect_gaps(wardrobe_results, needed_categories)
+
+    shop_results = []
+    for category in sorted(gaps):
+        shop_results.extend(search_shop(query, category=category, top_k=2))
+
+    return wardrobe_results, shop_results
+
+
+# ---------------------------------------------------------
+# 5. Printing wrapper — for running this file directly as a CLI check
 # ---------------------------------------------------------
 def style_outfit(query, needed_categories, top_k=5):
     print(f'Occasion: "{query}"')
     print(f"Needed categories: {sorted(needed_categories)}\n")
 
-    wardrobe_results = search_wardrobe(query, top_k=top_k)
+    owned_items, shop_items = style_outfit_data(query, needed_categories, top_k=top_k)
 
     print("OWNED (from your wardrobe):")
-    for item in wardrobe_results:
+    for item in owned_items:
         print(f"  [{item['similarity']:.3f}] ({item['category']}) {item['id']} — {item['description']}")
 
-    gaps = detect_gaps(wardrobe_results, needed_categories)
+    covered = {item["category"] for item in owned_items if item["similarity"] >= MIN_COVERAGE_SCORE}
+    gaps = needed_categories - covered
 
     if not gaps:
         print("\nNo gaps detected — wardrobe covers all needed categories.\n")
@@ -143,27 +168,27 @@ def style_outfit(query, needed_categories, top_k=5):
 
     print(f"\nGAPS DETECTED: {sorted(gaps)}")
     print("NEEDS BUYING (from shop catalog):")
-    for category in sorted(gaps):
-        shop_results = search_shop(query, category=category, top_k=2)
-        for item in shop_results:
-            print(f"  [{item['similarity']:.3f}] ({item['category']}) {item['id']} — {item['description']}")
+    for item in shop_items:
+        print(f"  [{item['similarity']:.3f}] ({item['category']}) {item['id']} — {item['description']}")
     print()
 
 
 if __name__ == "__main__":
+    print(f"Wardrobe: {wardrobe_collection.count()} items | Shop: {shop_collection.count()} items\n")
+
     # An occasion that should mostly be covered by the wardrobe
     style_outfit(
         "effortless outfit for a beach vacation",
         needed_categories={"top", "bottom", "dress", "footwear"},
     )
 
-   # An occasion designed to expose gaps — wardrobe is thin on
-# elegant cold-weather/formal dinner pieces. In practice, this also
-# surfaces two known limitations (see README): the casual hoodie
-# passes gap-detection for "formal" due to no formality field, and
-# the summer-tagged dress ranks #1 despite being season-inappropriate,
-# since season/weather filtering isn't wired into this script yet.
-style_outfit(
-    "elegant outfit for a formal winter dinner",
-    needed_categories={"dress", "outerwear", "footwear", "accessory"},
-)
+    # An occasion designed to expose gaps — wardrobe is thin on
+    # elegant cold-weather/formal dinner pieces. In practice, this also
+    # surfaces two known limitations (see README): the casual hoodie
+    # passes gap-detection for "formal" due to no formality field, and
+    # the summer-tagged dress ranks #1 despite being season-inappropriate,
+    # since season/weather filtering isn't wired into this script yet.
+    style_outfit(
+        "elegant outfit for a formal winter dinner",
+        needed_categories={"dress", "outerwear", "footwear", "accessory"},
+    )

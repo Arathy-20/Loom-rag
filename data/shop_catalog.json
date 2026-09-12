@@ -1,0 +1,128 @@
+[
+  {
+    "id": "s001",
+    "description": "emerald green satin slip dress, elegant, good for formal dinners or evening events",
+    "category": "dress",
+    "season": ["all-season"],
+    "weather": ["mild", "cold"]
+  },
+  {
+    "id": "s002",
+    "description": "black tailored wide-leg trousers, dressy, pairs well with heels for dinner or office",
+    "category": "bottom",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s003",
+    "description": "camel wool coat, long, structured, formal outerwear for cold weather",
+    "category": "outerwear",
+    "season": ["winter"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s004",
+    "description": "ribbed grey knit sweater, fitted, cozy but can be dressed up with trousers",
+    "category": "top",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s005",
+    "description": "white linen wide-leg pants, breezy, resort and beach appropriate",
+    "category": "bottom",
+    "season": ["summer"],
+    "weather": ["hot", "humid"]
+  },
+  {
+    "id": "s006",
+    "description": "strappy nude block-heel sandals, elegant, good for dinner dates or evening events",
+    "category": "footwear",
+    "season": ["summer", "all-season"],
+    "weather": ["hot", "mild"]
+  },
+  {
+    "id": "s007",
+    "description": "black ankle boots, sleek, versatile for cold-weather smart-casual outfits",
+    "category": "footwear",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s008",
+    "description": "burgundy velvet mini dress, long sleeve, dressy, suited for winter evenings out",
+    "category": "dress",
+    "season": ["winter"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s009",
+    "description": "beige trench coat, lightweight, smart-casual layering piece for monsoon or cool days",
+    "category": "outerwear",
+    "season": ["monsoon", "all-season"],
+    "weather": ["mild", "cold"]
+  },
+  {
+    "id": "s010",
+    "description": "gold layered pendant necklace, delicate, dresses up a simple outfit",
+    "category": "accessory",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "s011",
+    "description": "white broderie sundress, sleeveless, flowy, easy resort or beach wear",
+    "category": "dress",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "s012",
+    "description": "tan leather crossbody bag, structured, everyday practical accessory",
+    "category": "accessory",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "s013",
+    "description": "navy blazer, tailored, elevates casual outfits for dinner or semi-formal settings",
+    "category": "outerwear",
+    "season": ["all-season"],
+    "weather": ["mild", "cold"]
+  },
+  {
+    "id": "s014",
+    "description": "black high-waisted straight jeans, dark wash, dressier than casual denim",
+    "category": "bottom",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "s015",
+    "description": "cream cable-knit cardigan, oversized, cozy layering piece for cold evenings",
+    "category": "top",
+    "season": ["winter", "monsoon"],
+    "weather": ["cold"]
+  },
+  {
+    "id": "s016",
+    "description": "straw wide-brim hat, beach and resort accessory, sun protection with style",
+    "category": "accessory",
+    "season": ["summer"],
+    "weather": ["hot"]
+  },
+  {
+    "id": "s017",
+    "description": "white canvas sneakers, minimal, versatile everyday casual footwear",
+    "category": "footwear",
+    "season": ["all-season"],
+    "weather": ["all-weather"]
+  },
+  {
+    "id": "s018",
+    "description": "deep red satin slip skirt, midi length, dressy, good for date nights",
+    "category": "bottom",
+    "season": ["all-season"],
+    "weather": ["mild", "cold"]
+  }
+]
