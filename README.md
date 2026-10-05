@@ -36,7 +36,8 @@ loom-rag/
     ├── retrieve.py           # Week 1 — plain numpy cosine similarity (reference implementation)
     ├── filter.py              # Week 2 — standalone rule-based filter logic
     ├── retrieve_chroma.py     # Week 2 — filter + embed, combined via Chroma
-    └── retrieve_gap_fill.py   # Week 3 — wardrobe search + gap detection + shop search
+    ├── retrieve_gap_fill.py   # Week 3 — wardrobe search + gap detection + shop search
+    └── generate.py            # Week 4 — grounded generation + hallucination check
 ```
 
 ## Tools
@@ -48,8 +49,10 @@ loom-rag/
 
 ## Known limitations (to revisit in Week 5)
 
-- **Multi-value metadata filtering is unreliable.** Weather and season are stored as comma-joined strings (e.g. `"hot,humid"`) so they can be saved as Chroma metadata. Chroma's `where` clause does exact string matching, not substring/contains matching, so filtering on a single value (e.g. `weather="hot"`) silently fails to match items with multiple values. The `weather` parameter was deliberately left out of `retrieve_chroma.py`'s `search()` signature rather than ship it broken. Proper fix: one-hot boolean metadata fields per value (`weather_hot`, `weather_cold`, etc.).
-- **Gap detection has no formality/appropriateness signal.** Gap detection (`retrieve_gap_fill.py`) only measures topical similarity via embedding score, not suitability. Example: a casual hoodie cleared the coverage threshold for a "formal winter dinner" query, because "cold weather" and "night" overlapped semantically even though "casual" and "formal" are in tension. No `formality` field currently exists in the schema. Whether this is worth fixing with a new field vs. handled at the generation stage is an open question, to be decided based on how often it shows up in Week 5's evaluation set.
+- **Season/weather metadata exists but isn't applied during retrieval.** Both `search_wardrobe()` and `search_shop()` in `retrieve_gap_fill.py` only filter on `category` — season and weather are never checked, even though every item has that metadata. Confirmed failure case: for the query "elegant outfit for a formal winter dinner," the top-ranked dress (`w008`) is tagged `season: summer, weather: hot` — explicitly not winter-appropriate — yet it ranks #1 purely on embedding similarity to "dinner." This traces back to the multi-value metadata filtering issue below (weather/season are stored as comma-joined strings, which Chroma's exact-match `where` clause can't filter correctly), so the filter was left out rather than shipped broken. Unlike the formality gap below, this is fixable with data that already exists — it just isn't being used yet.
+- **Multi-value metadata filtering is unreliable.** Weather and season are stored as comma-joined strings (e.g. `"hot,humid"`) so they can be saved as Chroma metadata. Chroma's `where` clause does exact string matching, not substring/contains matching, so filtering on a single value (e.g. `weather="hot"`) silently fails to match items with multiple values. This is the root cause of the season/weather issue above. Proper fix: one-hot boolean metadata fields per value (`weather_hot`, `weather_cold`, etc.), then wire the filter into both `retrieve_chroma.py` and `retrieve_gap_fill.py`.
+- **Gap detection has no formality/appropriateness signal.** Gap detection only measures topical similarity via embedding score, not suitability. Example: a casual hoodie cleared the coverage threshold for the same "formal winter dinner" query, because "cold weather" and "night" overlapped semantically even though "casual" and "formal" are in tension. No `formality` field currently exists in the schema — unlike the issue above, there's no unused data to wire in; this would require adding a new field. Whether it's worth adding vs. handled at the generation stage is an open question, to be decided based on how often it shows up in Week 5's evaluation set.
+- **The grounding check only verifies item IDs, not claims made about those items.** `generate.py`'s grounding check confirms every mentioned item ID exists in the retrieved set, but does not check whether descriptive claims attached to an item are actually supported by its retrieved description. Confirmed case: for the beach-vacation query, the model described `w005` ("white skorts... not too casual, good for a cafe date") as "comfortable" — a word that appears nowhere in the original description. The item itself wasn't hallucinated (ID-level grounding held), but an attribute of it was. A stricter check would need to verify generated claims against the retrieved description text itself (e.g. word-overlap checking, or a second LLM call auditing the first), which is meaningfully harder than ID matching. Worth measuring in Week 5: how often this happens, and whether it's worth the extra complexity to catch.
 
 ## Build log
 
@@ -69,10 +72,14 @@ loom-rag/
 - Hand-built an 18-item shop catalog, deliberately covering wardrobe gaps
 - Implemented category-coverage gap detection with a similarity threshold
 - Chained wardrobe search → gap detection → shop search
-- Found and documented the formality/appropriateness limitation
+- Found and documented the season/weather and formality limitations
 
 ### Week 4 — Grounded generation (Stage 4)
-*In progress*
+- Built `generate.py`: Gemini call constrained to retrieved items only, via a system-instruction/user-message split (rules vs. data)
+- Migrated from the deprecated `google-generativeai` SDK to `google-genai`
+- Implemented an ID-level grounding check after generation
+- Verified end-to-end: no hallucinated item IDs in testing so far
+- Found and documented a subtler gap: unverified descriptive claims about real retrieved items (grounding check doesn't catch this yet)
 
 ### Week 5 — Evaluation
 *Not started*
