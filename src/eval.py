@@ -24,6 +24,7 @@ from retrieve_gap_fill import (
     style_outfit_data,
     detect_gaps,
     MIN_COVERAGE_SCORE,
+    EMBED_MODE,
 )
 
 EVAL_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "eval_set.json")
@@ -166,6 +167,7 @@ if __name__ == "__main__":
     with open(EVAL_PATH, "r") as f:
         eval_set = json.load(f)
 
+    print(f"Embedding mode: {EMBED_MODE}")
     print(f"Loaded {len(eval_set)} labelled queries.\n")
     evaluate_retrieval(eval_set)
     evaluate_gaps(eval_set)

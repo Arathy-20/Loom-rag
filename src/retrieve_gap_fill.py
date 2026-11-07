@@ -31,6 +31,28 @@ SHOP_PATH = os.path.join(DATA_DIR, "shop_catalog.json")
 # suitability (e.g. formality) — see README.
 MIN_COVERAGE_SCORE = 0.30
 
+# ---------------------------------------------------------
+# Week 5 experiment switch: what text gets EMBEDDED for each item.
+#   "description" (default) = baseline, embed the description only
+#   "tags"                  = embed description + season + weather text
+# Set with:  $env:LOOM_EMBED_MODE="tags"   (PowerShell)
+# Only the embedded text changes. The stored/returned description is
+# always the original, so generation never sees the tag text.
+# ---------------------------------------------------------
+EMBED_MODE = os.environ.get("LOOM_EMBED_MODE", "description")
+if EMBED_MODE not in ("description", "tags"):
+    raise ValueError(f"LOOM_EMBED_MODE must be 'description' or 'tags', got {EMBED_MODE!r}")
+
+
+def embedding_text(item):
+    if EMBED_MODE == "tags":
+        return (
+            f"{item['description']}. "
+            f"Season: {', '.join(item['season'])}. "
+            f"Weather: {', '.join(item['weather'])}."
+        )
+    return item["description"]
+
 
 # ---------------------------------------------------------
 # 1. Load both corpora
@@ -59,12 +81,14 @@ shop_collection = client.create_collection("shop", embedding_function=embedding_
 wardrobe_collection.add(
     ids=[item["id"] for item in wardrobe],
     documents=[item["description"] for item in wardrobe],
+    embeddings=embedding_fn([embedding_text(item) for item in wardrobe]),
     metadatas=[{"category": item["category"]} for item in wardrobe],
 )
 
 shop_collection.add(
     ids=[item["id"] for item in shop_catalog],
     documents=[item["description"] for item in shop_catalog],
+    embeddings=embedding_fn([embedding_text(item) for item in shop_catalog]),
     metadatas=[{"category": item["category"]} for item in shop_catalog],
 )
 
