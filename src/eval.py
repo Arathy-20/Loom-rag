@@ -22,9 +22,11 @@ import os
 from retrieve_gap_fill import (
     search_wardrobe,
     style_outfit_data,
-    detect_gaps,
+    find_gaps,
+    category_best_scores,
     MIN_COVERAGE_SCORE,
     EMBED_MODE,
+    GAP_MODE,
 )
 
 EVAL_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "eval_set.json")
@@ -118,7 +120,7 @@ def evaluate_retrieval(eval_set):
 # ---------------------------------------------------------
 def evaluate_gaps(eval_set):
     print("=" * 78)
-    print(f"PART 2: GAP DETECTION + SHOP RETRIEVAL (threshold = {MIN_COVERAGE_SCORE})")
+    print(f"PART 2: GAP DETECTION + SHOP RETRIEVAL (mode = {GAP_MODE}, threshold = {MIN_COVERAGE_SCORE})")
     print("=" * 78)
     print(f"{'id':<5}{'expected gaps':<36}{'detected gaps':<42}")
 
@@ -134,7 +136,7 @@ def evaluate_gaps(eval_set):
         relevant_shop = set(entry["relevant_shop_ids"])
 
         owned, shop = style_outfit_data(entry["query"], needed, top_k=5)
-        detected = detect_gaps(owned, needed)
+        detected = find_gaps(entry["query"], owned, needed)
 
         missed = expected - detected          # real gaps the system did not flag
         false_alarms = detected - expected    # gaps flagged that were not real
@@ -163,11 +165,61 @@ def evaluate_gaps(eval_set):
     print()
 
 
+# ---------------------------------------------------------
+# Part 3: per-category scores + threshold sweep
+#   Independent of LOOM_GAP_MODE. Pure diagnostics: for every needed
+#   category, the best wardrobe score inside that category, plus how
+#   each possible threshold would score on the labelled gaps.
+#   "*" marks a category that is a TRUE gap according to the labels.
+# ---------------------------------------------------------
+def evaluate_gap_scores(eval_set):
+    print("=" * 78)
+    print("PART 3: BEST SCORE PER NEEDED CATEGORY  (* = labelled as a true gap)")
+    print("=" * 78)
+
+    all_scores = []
+    for entry in eval_set:
+        needed = set(entry["needed_categories"])
+        expected = set(entry["expected_gap_categories"])
+        scores = category_best_scores(entry["query"], needed)
+        all_scores.append((entry, expected, scores))
+        cells = []
+        for cat in sorted(scores):
+            sc = scores[cat]
+            mark = "*" if cat in expected else ""
+            cells.append(f"{cat}{mark}={sc:.2f}" if sc is not None else f"{cat}{mark}=n/a")
+        print(f"{entry['id']:<5}" + "   ".join(cells))
+
+    true_gap_scores = [sc for _, exp, scs in all_scores for c, sc in scs.items() if c in exp and sc is not None]
+    covered_scores = [sc for _, exp, scs in all_scores for c, sc in scs.items() if c not in exp and sc is not None]
+    if true_gap_scores and covered_scores:
+        print(f"\nTrue-gap categories:    best scores range {min(true_gap_scores):.2f} to {max(true_gap_scores):.2f}")
+        print(f"Covered categories:     best scores range {min(covered_scores):.2f} to {max(covered_scores):.2f}")
+        print("(If these ranges overlap, no single threshold can separate them.)")
+
+    print("\nTHRESHOLD SWEEP (per-category scoring)")
+    print(f"{'thresh':>7}{'exact':>8}{'missed':>8}{'false':>8}")
+    n = len(all_scores)
+    for t in [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60]:
+        exact = missed = false = 0
+        for entry, expected, scores in all_scores:
+            detected = {c for c, sc in scores.items() if sc is None or sc < t}
+            m, f = expected - detected, detected - expected
+            exact += (not m and not f)
+            missed += len(m)
+            false += len(f)
+        cur = "  <- current" if abs(t - MIN_COVERAGE_SCORE) < 1e-9 else ""
+        print(f"{t:>7.2f}{exact:>5}/{n:<2}{missed:>8}{false:>8}{cur}")
+    print()
+
+
 if __name__ == "__main__":
     with open(EVAL_PATH, "r") as f:
         eval_set = json.load(f)
 
     print(f"Embedding mode: {EMBED_MODE}")
+    print(f"Gap mode: {GAP_MODE}")
     print(f"Loaded {len(eval_set)} labelled queries.\n")
     evaluate_retrieval(eval_set)
     evaluate_gaps(eval_set)
+    evaluate_gap_scores(eval_set)

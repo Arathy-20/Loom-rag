@@ -151,6 +151,40 @@ def detect_gaps(wardrobe_results, needed_categories):
 
 
 # ---------------------------------------------------------
+# Week 5 experiment B: HOW gaps are detected.
+#   "global"       (default, baseline) a category is covered only if one
+#                  of its items made the global top-k wardrobe results.
+#   "per_category" each needed category is searched on its own, and it
+#                  is covered if its single best item scores >= threshold.
+# Set with:  $env:LOOM_GAP_MODE="per_category"   (PowerShell)
+# ---------------------------------------------------------
+GAP_MODE = os.environ.get("LOOM_GAP_MODE", "global")
+if GAP_MODE not in ("global", "per_category"):
+    raise ValueError(f"LOOM_GAP_MODE must be 'global' or 'per_category', got {GAP_MODE!r}")
+
+
+def category_best_scores(query, needed_categories):
+    """Best wardrobe similarity within each needed category (None if the category is empty)."""
+    scores = {}
+    for category in sorted(needed_categories):
+        results = search_wardrobe(query, category=category, top_k=1)
+        scores[category] = results[0]["similarity"] if results else None
+    return scores
+
+
+def detect_gaps_per_category(query, needed_categories):
+    scores = category_best_scores(query, needed_categories)
+    return {c for c, sc in scores.items() if sc is None or sc < MIN_COVERAGE_SCORE}
+
+
+def find_gaps(query, wardrobe_results, needed_categories):
+    """Single entry point: picks the gap-detection method from LOOM_GAP_MODE."""
+    if GAP_MODE == "per_category":
+        return detect_gaps_per_category(query, needed_categories)
+    return detect_gaps(wardrobe_results, needed_categories)
+
+
+# ---------------------------------------------------------
 # 4. Core pipeline — returns data (used by generate.py and the
 #    printing wrapper below)
 # ---------------------------------------------------------
@@ -161,7 +195,7 @@ def style_outfit_data(query, needed_categories, top_k=5):
     No printing — callers decide how to present the result.
     """
     wardrobe_results = search_wardrobe(query, top_k=top_k)
-    gaps = detect_gaps(wardrobe_results, needed_categories)
+    gaps = find_gaps(query, wardrobe_results, needed_categories)
 
     shop_results = []
     for category in sorted(gaps):
@@ -183,8 +217,7 @@ def style_outfit(query, needed_categories, top_k=5):
     for item in owned_items:
         print(f"  [{item['similarity']:.3f}] ({item['category']}) {item['id']} — {item['description']}")
 
-    covered = {item["category"] for item in owned_items if item["similarity"] >= MIN_COVERAGE_SCORE}
-    gaps = needed_categories - covered
+    gaps = find_gaps(query, owned_items, needed_categories)
 
     if not gaps:
         print("\nNo gaps detected — wardrobe covers all needed categories.\n")
