@@ -55,6 +55,62 @@ def embedding_text(item):
 
 
 # ---------------------------------------------------------
+# Week 5 experiment C: HARD season/weather filtering.
+#   "off" (default, baseline)  season/weather arguments are ignored.
+#   "on"                       season/weather arguments become hard
+#                              filters applied BEFORE similarity ranking.
+# Items tagged "all-season" / "all-weather" always pass.
+# Set with:  $env:LOOM_FILTER_MODE="on"   (PowerShell)
+#
+# Why one True/False field per tag value: Chroma's `where` can only do
+# exact matching, so a list like ["hot", "humid"] (or the string
+# "hot,humid") cannot be filtered for "hot". One boolean per value can.
+# ---------------------------------------------------------
+FILTER_MODE = os.environ.get("LOOM_FILTER_MODE", "off")
+if FILTER_MODE not in ("off", "on"):
+    raise ValueError(f"LOOM_FILTER_MODE must be 'off' or 'on', got {FILTER_MODE!r}")
+
+SEASONS = ("summer", "winter", "monsoon")
+WEATHERS = ("hot", "cold", "humid", "mild")
+
+
+def tag_metadata(item):
+    unknown = (set(item["season"]) - set(SEASONS) - {"all-season"}) | \
+              (set(item["weather"]) - set(WEATHERS) - {"all-weather"})
+    if unknown:
+        raise ValueError(f"{item['id']}: unknown tag value(s) {sorted(unknown)}")
+    meta = {"category": item["category"]}
+    for s in SEASONS:
+        meta[f"season_{s}"] = s in item["season"]
+    meta["season_all"] = "all-season" in item["season"]
+    for w in WEATHERS:
+        meta[f"weather_{w}"] = w in item["weather"]
+    meta["weather_all"] = "all-weather" in item["weather"]
+    return meta
+
+
+def _tag_clause(kind, value, allowed):
+    if value not in allowed:
+        raise ValueError(f"unknown {kind} {value!r}; expected one of {allowed}")
+    return {"$or": [{f"{kind}_{value}": True}, {f"{kind}_all": True}]}
+
+
+def build_where(category=None, season=None, weather=None):
+    """Chroma `where` clause for category (always) + season/weather (only if FILTER_MODE is on)."""
+    clauses = []
+    if category:
+        clauses.append({"category": category})
+    if FILTER_MODE == "on":
+        if season:
+            clauses.append(_tag_clause("season", season, SEASONS))
+        if weather:
+            clauses.append(_tag_clause("weather", weather, WEATHERS))
+    if not clauses:
+        return None
+    return clauses[0] if len(clauses) == 1 else {"$and": clauses}
+
+
+# ---------------------------------------------------------
 # 1. Load both corpora
 # ---------------------------------------------------------
 with open(WARDROBE_PATH, "r") as f:
@@ -82,38 +138,41 @@ wardrobe_collection.add(
     ids=[item["id"] for item in wardrobe],
     documents=[item["description"] for item in wardrobe],
     embeddings=embedding_fn([embedding_text(item) for item in wardrobe]),
-    metadatas=[{"category": item["category"]} for item in wardrobe],
+    metadatas=[tag_metadata(item) for item in wardrobe],
 )
 
 shop_collection.add(
     ids=[item["id"] for item in shop_catalog],
     documents=[item["description"] for item in shop_catalog],
     embeddings=embedding_fn([embedding_text(item) for item in shop_catalog]),
-    metadatas=[{"category": item["category"]} for item in shop_catalog],
+    metadatas=[tag_metadata(item) for item in shop_catalog],
 )
 
 
 # ---------------------------------------------------------
 # 2. Search functions
 # ---------------------------------------------------------
-# KNOWN LIMITATION: only category is filtered here. Season/weather
-# metadata exists on every item but is NOT applied — see README for
-# the confirmed failure case (a summer-tagged dress ranking #1 for a
-# winter query) and the root cause (multi-value metadata filtering).
-def search_wardrobe(query, category=None, top_k=5):
-    where_clause = {"category": category} if category else None
+# Category is always filtered. Season/weather are filtered only when
+# LOOM_FILTER_MODE=on (see build_where above); otherwise they are ignored.
+def search_wardrobe(query, category=None, top_k=5, season=None, weather=None):
     results = wardrobe_collection.query(
-        query_texts=[query], n_results=top_k, where=where_clause
+        query_texts=[query], n_results=top_k,
+        where=build_where(category, season, weather),
     )
     return _format_results(results)
 
 
-def search_shop(query, category=None, top_k=5):
-    where_clause = {"category": category} if category else None
+def search_shop(query, category=None, top_k=5, season=None, weather=None):
     results = shop_collection.query(
-        query_texts=[query], n_results=top_k, where=where_clause
+        query_texts=[query], n_results=top_k,
+        where=build_where(category, season, weather),
     )
     return _format_results(results)
+
+
+def eligible_wardrobe_count(season=None, weather=None):
+    """How many wardrobe items survive the hard filter (all of them when the filter is off)."""
+    return len(wardrobe_collection.get(where=build_where(season=season, weather=weather))["ids"])
 
 
 def _format_results(results):
@@ -163,24 +222,24 @@ if GAP_MODE not in ("global", "per_category"):
     raise ValueError(f"LOOM_GAP_MODE must be 'global' or 'per_category', got {GAP_MODE!r}")
 
 
-def category_best_scores(query, needed_categories):
+def category_best_scores(query, needed_categories, season=None, weather=None):
     """Best wardrobe similarity within each needed category (None if the category is empty)."""
     scores = {}
     for category in sorted(needed_categories):
-        results = search_wardrobe(query, category=category, top_k=1)
+        results = search_wardrobe(query, category=category, top_k=1, season=season, weather=weather)
         scores[category] = results[0]["similarity"] if results else None
     return scores
 
 
-def detect_gaps_per_category(query, needed_categories):
-    scores = category_best_scores(query, needed_categories)
+def detect_gaps_per_category(query, needed_categories, season=None, weather=None):
+    scores = category_best_scores(query, needed_categories, season, weather)
     return {c for c, sc in scores.items() if sc is None or sc < MIN_COVERAGE_SCORE}
 
 
-def find_gaps(query, wardrobe_results, needed_categories):
+def find_gaps(query, wardrobe_results, needed_categories, season=None, weather=None):
     """Single entry point: picks the gap-detection method from LOOM_GAP_MODE."""
     if GAP_MODE == "per_category":
-        return detect_gaps_per_category(query, needed_categories)
+        return detect_gaps_per_category(query, needed_categories, season, weather)
     return detect_gaps(wardrobe_results, needed_categories)
 
 
@@ -188,18 +247,18 @@ def find_gaps(query, wardrobe_results, needed_categories):
 # 4. Core pipeline — returns data (used by generate.py and the
 #    printing wrapper below)
 # ---------------------------------------------------------
-def style_outfit_data(query, needed_categories, top_k=5):
+def style_outfit_data(query, needed_categories, top_k=5, season=None, weather=None):
     """
     Runs the full wardrobe -> gap detection -> shop pipeline and
     returns (owned_items, shop_items) as plain lists of dicts.
     No printing — callers decide how to present the result.
     """
-    wardrobe_results = search_wardrobe(query, top_k=top_k)
-    gaps = find_gaps(query, wardrobe_results, needed_categories)
+    wardrobe_results = search_wardrobe(query, top_k=top_k, season=season, weather=weather)
+    gaps = find_gaps(query, wardrobe_results, needed_categories, season, weather)
 
     shop_results = []
     for category in sorted(gaps):
-        shop_results.extend(search_shop(query, category=category, top_k=2))
+        shop_results.extend(search_shop(query, category=category, top_k=2, season=season, weather=weather))
 
     return wardrobe_results, shop_results
 
@@ -207,17 +266,17 @@ def style_outfit_data(query, needed_categories, top_k=5):
 # ---------------------------------------------------------
 # 5. Printing wrapper — for running this file directly as a CLI check
 # ---------------------------------------------------------
-def style_outfit(query, needed_categories, top_k=5):
+def style_outfit(query, needed_categories, top_k=5, season=None, weather=None):
     print(f'Occasion: "{query}"')
     print(f"Needed categories: {sorted(needed_categories)}\n")
 
-    owned_items, shop_items = style_outfit_data(query, needed_categories, top_k=top_k)
+    owned_items, shop_items = style_outfit_data(query, needed_categories, top_k=top_k, season=season, weather=weather)
 
     print("OWNED (from your wardrobe):")
     for item in owned_items:
         print(f"  [{item['similarity']:.3f}] ({item['category']}) {item['id']} — {item['description']}")
 
-    gaps = find_gaps(query, owned_items, needed_categories)
+    gaps = find_gaps(query, owned_items, needed_categories, season, weather)
 
     if not gaps:
         print("\nNo gaps detected — wardrobe covers all needed categories.\n")

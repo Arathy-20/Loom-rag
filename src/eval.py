@@ -27,6 +27,8 @@ from retrieve_gap_fill import (
     MIN_COVERAGE_SCORE,
     EMBED_MODE,
     GAP_MODE,
+    FILTER_MODE,
+    eligible_wardrobe_count,
 )
 
 EVAL_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "eval_set.json")
@@ -72,7 +74,8 @@ def evaluate_retrieval(eval_set):
         if not relevant:
             continue  # nothing labelled, so nothing to measure
 
-        results = search_wardrobe(entry["query"], top_k=max(K_VALUES))
+        season, weather = entry.get("season"), entry.get("weather")
+        results = search_wardrobe(entry["query"], top_k=max(K_VALUES), season=season, weather=weather)
         retrieved_ids = [r["id"] for r in results]
 
         rows.append({
@@ -84,15 +87,16 @@ def evaluate_retrieval(eval_set):
             "r": {k: recall_at_k(retrieved_ids, relevant, k) for k in K_VALUES},
             "hit": {k: hit_at_k(retrieved_ids, relevant, k) for k in K_VALUES},
             "ceiling": {k: precision_ceiling(relevant, k) for k in K_VALUES},
+            "pool": eligible_wardrobe_count(season, weather),
         })
 
     print("=" * 78)
     print("PART 1: WARDROBE RETRIEVAL (per query, at k=5)")
     print("=" * 78)
-    print(f"{'id':<5}{'P@5':>6}{'R@5':>6}{'hit@5':>7}  query")
+    print(f"{'id':<5}{'P@5':>6}{'R@5':>6}{'hit@5':>7}{'pool':>6}  query")
     for row in rows:
         print(f"{row['id']:<5}{row['p'][5]:>6.2f}{row['r'][5]:>6.2f}"
-              f"{row['hit'][5]:>7.0f}  {row['query']}")
+              f"{row['hit'][5]:>7.0f}{row['pool']:>6}  {row['query']}")
 
     n = len(rows)
     print("\nAVERAGES ACROSS QUERIES (macro-average)")
@@ -120,7 +124,7 @@ def evaluate_retrieval(eval_set):
 # ---------------------------------------------------------
 def evaluate_gaps(eval_set):
     print("=" * 78)
-    print(f"PART 2: GAP DETECTION + SHOP RETRIEVAL (mode = {GAP_MODE}, threshold = {MIN_COVERAGE_SCORE})")
+    print(f"PART 2: GAP DETECTION + SHOP RETRIEVAL (gap mode = {GAP_MODE}, filter = {FILTER_MODE}, threshold = {MIN_COVERAGE_SCORE})")
     print("=" * 78)
     print(f"{'id':<5}{'expected gaps':<36}{'detected gaps':<42}")
 
@@ -135,8 +139,9 @@ def evaluate_gaps(eval_set):
         expected = set(entry["expected_gap_categories"])
         relevant_shop = set(entry["relevant_shop_ids"])
 
-        owned, shop = style_outfit_data(entry["query"], needed, top_k=5)
-        detected = find_gaps(entry["query"], owned, needed)
+        season, weather = entry.get("season"), entry.get("weather")
+        owned, shop = style_outfit_data(entry["query"], needed, top_k=5, season=season, weather=weather)
+        detected = find_gaps(entry["query"], owned, needed, season, weather)
 
         missed = expected - detected          # real gaps the system did not flag
         false_alarms = detected - expected    # gaps flagged that were not real
@@ -181,7 +186,7 @@ def evaluate_gap_scores(eval_set):
     for entry in eval_set:
         needed = set(entry["needed_categories"])
         expected = set(entry["expected_gap_categories"])
-        scores = category_best_scores(entry["query"], needed)
+        scores = category_best_scores(entry["query"], needed, entry.get("season"), entry.get("weather"))
         all_scores.append((entry, expected, scores))
         cells = []
         for cat in sorted(scores):
@@ -219,6 +224,7 @@ if __name__ == "__main__":
 
     print(f"Embedding mode: {EMBED_MODE}")
     print(f"Gap mode: {GAP_MODE}")
+    print(f"Filter mode: {FILTER_MODE}")
     print(f"Loaded {len(eval_set)} labelled queries.\n")
     evaluate_retrieval(eval_set)
     evaluate_gaps(eval_set)
