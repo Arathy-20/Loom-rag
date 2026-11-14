@@ -119,6 +119,10 @@ with open(WARDROBE_PATH, "r") as f:
 with open(SHOP_PATH, "r") as f:
     shop_catalog = json.load(f)
 
+# Categories that actually exist in the data. Used to reject typos up front
+# instead of silently treating an unknown category as a gap.
+KNOWN_CATEGORIES = {i["category"] for i in wardrobe} | {i["category"] for i in shop_catalog}
+
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
@@ -186,7 +190,7 @@ def _format_results(results):
             "id": item_id,
             "description": doc,
             "category": meta["category"],
-            "similarity": 1 - dist,
+            "similarity": float(1 - dist),
         })
     return out
 
@@ -247,11 +251,11 @@ def find_gaps(query, wardrobe_results, needed_categories, season=None, weather=N
 # 4. Core pipeline — returns data (used by generate.py and the
 #    printing wrapper below)
 # ---------------------------------------------------------
-def style_outfit_data(query, needed_categories, top_k=5, season=None, weather=None):
+def retrieve_for_occasion(query, needed_categories, top_k=5, season=None, weather=None):
     """
-    Runs the full wardrobe -> gap detection -> shop pipeline and
-    returns (owned_items, shop_items) as plain lists of dicts.
-    No printing — callers decide how to present the result.
+    Full retrieval pipeline: wardrobe search -> gap detection -> shop search.
+    Returns {"owned": [...], "shop": [...], "gaps": [...]}.
+    No printing and no LLM call, so it can be tested and called without an API key.
     """
     wardrobe_results = search_wardrobe(query, top_k=top_k, season=season, weather=weather)
     gaps = find_gaps(query, wardrobe_results, needed_categories, season, weather)
@@ -260,7 +264,13 @@ def style_outfit_data(query, needed_categories, top_k=5, season=None, weather=No
     for category in sorted(gaps):
         shop_results.extend(search_shop(query, category=category, top_k=2, season=season, weather=weather))
 
-    return wardrobe_results, shop_results
+    return {"owned": wardrobe_results, "shop": shop_results, "gaps": sorted(gaps)}
+
+
+def style_outfit_data(query, needed_categories, top_k=5, season=None, weather=None):
+    """Backwards-compatible wrapper (used by eval.py): returns (owned_items, shop_items)."""
+    result = retrieve_for_occasion(query, needed_categories, top_k, season, weather)
+    return result["owned"], result["shop"]
 
 
 # ---------------------------------------------------------

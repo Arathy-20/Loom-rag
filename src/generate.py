@@ -20,10 +20,12 @@ and gets flagged.
 SDK: uses the unified `google-genai` SDK (the older
 `google-generativeai` package is deprecated).
 
-KNOWN GAP for productionizing: generate_styling_advice() currently
-PRINTS its result instead of returning it — needs to return
-(generated_text, grounding_result) before this can back a FastAPI
-endpoint.
+generate_styling_advice() RETURNS its result (advice text + grounding
+check) instead of printing, so an API can serialize it. The Gemini client
+is created lazily on first use, so importing this module needs no API key.
+
+LIMITATION: the grounding check only finds IDs written like "(w011)".
+If the model cites no IDs at all, the check passes vacuously.
 """
 
 import os
@@ -32,10 +34,6 @@ import re
 from google import genai
 from google.genai import types
 
-from retrieve_gap_fill import style_outfit_data
-
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # Check AI Studio's model list if this name stops working — model
 # names get retired over time.
@@ -105,15 +103,40 @@ def extract_mentioned_ids(text):
     return set(re.findall(r"\(([ws]\d{3})\)", text))
 
 
-def generate_styling_advice(query, owned_items, shop_items):
-    if not GEMINI_API_KEY:
-        raise RuntimeError(
-            "GEMINI_API_KEY environment variable not set. "
-            "Get a key from https://aistudio.google.com/apikey and set it "
-            "before running this script."
-        )
+_client = None
 
-    client = genai.Client(api_key=GEMINI_API_KEY)
+
+def _get_client():
+    """Create the Gemini client once, on first use, and reuse it."""
+    global _client
+    if _client is None:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY environment variable not set. "
+                "Get a key from https://aistudio.google.com/apikey and set it "
+                "before generating advice."
+            )
+        _client = genai.Client(api_key=api_key)
+    return _client
+
+
+def check_grounding(generated_text, owned_items, shop_items):
+    """Pure function: did the text mention any item ID that was not retrieved?"""
+    valid_ids = {item["id"] for item in owned_items} | {item["id"] for item in shop_items}
+    mentioned_ids = extract_mentioned_ids(generated_text)
+    hallucinated_ids = mentioned_ids - valid_ids
+    return {
+        "retrieved_ids": sorted(valid_ids),
+        "mentioned_ids": sorted(mentioned_ids),
+        "hallucinated_ids": sorted(hallucinated_ids),
+        "grounded": not hallucinated_ids,
+    }
+
+
+def generate_styling_advice(query, owned_items, shop_items):
+    """Returns {"advice": str, "grounding": {...}}. Does not print."""
+    client = _get_client()
 
     user_message = USER_MESSAGE_TEMPLATE.format(
         query=query,
@@ -127,28 +150,31 @@ def generate_styling_advice(query, owned_items, shop_items):
         config=types.GenerateContentConfig(system_instruction=SYSTEM_INSTRUCTION),
     )
     generated_text = response.text
+    if not generated_text:
+        raise RuntimeError("Gemini returned no text (the response may have been blocked or empty).")
 
-    # ---------------------------------------------------------
-    # Grounding check: did the model mention any ID that wasn't
-    # actually retrieved?
-    # ---------------------------------------------------------
-    valid_ids = {item["id"] for item in owned_items} | {item["id"] for item in shop_items}
-    mentioned_ids = extract_mentioned_ids(generated_text)
-    hallucinated_ids = mentioned_ids - valid_ids
+    return {
+        "advice": generated_text,
+        "grounding": check_grounding(generated_text, owned_items, shop_items),
+    }
 
-    print(generated_text)
+
+def print_advice(result):
+    """CLI presentation of a generate_styling_advice() result."""
+    grounding = result["grounding"]
+    print(result["advice"])
     print("\n--- Grounding check ---")
-    print(f"Items retrieved: {sorted(valid_ids)}")
-    print(f"Items mentioned: {sorted(mentioned_ids)}")
-    if hallucinated_ids:
-        print(f"⚠ HALLUCINATION DETECTED — mentioned IDs not in retrieved set: {sorted(hallucinated_ids)}")
+    print(f"Items retrieved: {grounding['retrieved_ids']}")
+    print(f"Items mentioned: {grounding['mentioned_ids']}")
+    if grounding["hallucinated_ids"]:
+        print(f"⚠ HALLUCINATION DETECTED — mentioned IDs not in retrieved set: {grounding['hallucinated_ids']}")
     else:
         print("✓ All mentioned items are grounded in retrieved results.")
 
 
 if __name__ == "__main__":
+    from retrieve_gap_fill import retrieve_for_occasion
+
     query = "effortless outfit for a beach vacation"
-    owned, shop = style_outfit_data(
-        query, needed_categories={"top", "bottom", "dress", "footwear"}
-    )
-    generate_styling_advice(query, owned, shop)
+    retrieved = retrieve_for_occasion(query, {"top", "bottom", "dress", "footwear"})
+    print_advice(generate_styling_advice(query, retrieved["owned"], retrieved["shop"]))
