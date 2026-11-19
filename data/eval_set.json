@@ -1,0 +1,333 @@
+[
+  {
+    "id": "q01",
+    "query": "cold weather outfit",
+    "needed_categories": [
+      "top",
+      "outerwear",
+      "bottom",
+      "footwear"
+    ],
+    "season": null,
+    "weather": "cold",
+    "relevant_wardrobe_ids": [
+      "w002",
+      "w003",
+      "w007",
+      "w012",
+      "w014",
+      "w017",
+      "w018"
+    ],
+    "relevant_shop_ids": [
+      "s002",
+      "s003",
+      "s004",
+      "s007",
+      "s009",
+      "s015"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Easy case. Wardrobe covers every category."
+  },
+  {
+    "id": "q02",
+    "query": "effortless outfit for a beach vacation",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "dress",
+      "footwear"
+    ],
+    "season": null,
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w001",
+      "w005",
+      "w006",
+      "w010",
+      "w011",
+      "w012",
+      "w016",
+      "w019",
+      "w020"
+    ],
+    "relevant_shop_ids": [
+      "s005",
+      "s006",
+      "s011",
+      "s017"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Easy case. w012 (hot-tagged sneakers) counts as footwear, so no true gap."
+  },
+  {
+    "id": "q03",
+    "query": "casual everyday outfit for hot weather",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "footwear"
+    ],
+    "season": null,
+    "weather": "hot",
+    "relevant_wardrobe_ids": [
+      "w001",
+      "w006",
+      "w007",
+      "w012",
+      "w015",
+      "w016",
+      "w018",
+      "w020"
+    ],
+    "relevant_shop_ids": [
+      "s005",
+      "s017"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Easy case."
+  },
+  {
+    "id": "q04",
+    "query": "elegant outfit for a formal winter dinner",
+    "needed_categories": [
+      "dress",
+      "outerwear",
+      "footwear",
+      "accessory"
+    ],
+    "season": "winter",
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w013",
+      "w014"
+    ],
+    "relevant_shop_ids": [
+      "s001",
+      "s003",
+      "s007",
+      "s008",
+      "s010",
+      "s013"
+    ],
+    "expected_gap_categories": [
+      "dress",
+      "outerwear",
+      "footwear"
+    ],
+    "notes": "Known-limitation test. w008 deliberately NOT labelled relevant: it is summer/hot-tagged. Hoodie w002 excluded (casual)."
+  },
+  {
+    "id": "q05",
+    "query": "something cozy for a cold night out",
+    "needed_categories": [
+      "top",
+      "outerwear",
+      "bottom"
+    ],
+    "season": null,
+    "weather": "cold",
+    "relevant_wardrobe_ids": [
+      "w002",
+      "w003",
+      "w007",
+      "w014",
+      "w017",
+      "w018"
+    ],
+    "relevant_shop_ids": [
+      "s003",
+      "s004",
+      "s015"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Easy case, strong overlap with w002."
+  },
+  {
+    "id": "q06",
+    "query": "elegant but not too dressy, good for a cafe date",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "footwear"
+    ],
+    "season": null,
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w005",
+      "w007",
+      "w011",
+      "w016",
+      "w020"
+    ],
+    "relevant_shop_ids": [
+      "s006",
+      "s017"
+    ],
+    "expected_gap_categories": [
+      "footwear"
+    ],
+    "notes": "Fuzzy intent. Wardrobe has no elegant footwear."
+  },
+  {
+    "id": "q07",
+    "query": "outfit for a concert night",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "dress",
+      "footwear"
+    ],
+    "season": null,
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w003",
+      "w007",
+      "w008",
+      "w012",
+      "w015",
+      "w018"
+    ],
+    "relevant_shop_ids": [
+      "s014",
+      "s017"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Only w008 mentions concerts, so this tests fuzzy matching."
+  },
+  {
+    "id": "q08",
+    "query": "outfit for a rainy monsoon day",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "outerwear",
+      "footwear"
+    ],
+    "season": "monsoon",
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w002",
+      "w007",
+      "w014",
+      "w015",
+      "w018"
+    ],
+    "relevant_shop_ids": [
+      "s004",
+      "s007",
+      "s009",
+      "s015"
+    ],
+    "expected_gap_categories": [
+      "footwear"
+    ],
+    "notes": "Season test. No monsoon-tagged footwear in the wardrobe. Season filter is not wired in."
+  },
+  {
+    "id": "q09",
+    "query": "ethnic-inspired look for a summer festival",
+    "needed_categories": [
+      "dress",
+      "accessory",
+      "footwear"
+    ],
+    "season": "summer",
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w009",
+      "w010",
+      "w013"
+    ],
+    "relevant_shop_ids": [
+      "s006",
+      "s010"
+    ],
+    "expected_gap_categories": [
+      "footwear"
+    ],
+    "notes": "Fuzzy intent, few matching items."
+  },
+  {
+    "id": "q10",
+    "query": "smart casual outfit for a winter evening",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "outerwear",
+      "footwear"
+    ],
+    "season": "winter",
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w007",
+      "w014",
+      "w017"
+    ],
+    "relevant_shop_ids": [
+      "s004",
+      "s007",
+      "s009",
+      "s013",
+      "s014"
+    ],
+    "expected_gap_categories": [
+      "outerwear",
+      "footwear"
+    ],
+    "notes": "Formality + season test. Hoodie w002 excluded as too casual."
+  },
+  {
+    "id": "q11",
+    "query": "comfortable outfit for a long travel day",
+    "needed_categories": [
+      "top",
+      "bottom",
+      "footwear"
+    ],
+    "season": null,
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w003",
+      "w007",
+      "w012",
+      "w015",
+      "w017",
+      "w018"
+    ],
+    "relevant_shop_ids": [
+      "s017"
+    ],
+    "expected_gap_categories": [],
+    "notes": "Hard semantic case: query words barely appear in any description."
+  },
+  {
+    "id": "q12",
+    "query": "dressy summer dinner date",
+    "needed_categories": [
+      "dress",
+      "footwear",
+      "accessory"
+    ],
+    "season": "summer",
+    "weather": null,
+    "relevant_wardrobe_ids": [
+      "w005",
+      "w008",
+      "w009",
+      "w010",
+      "w013"
+    ],
+    "relevant_shop_ids": [
+      "s001",
+      "s006",
+      "s010",
+      "s011"
+    ],
+    "expected_gap_categories": [
+      "footwear"
+    ],
+    "notes": "Should favour w008 over winter-formal items. No elegant footwear owned."
+  }
+]
